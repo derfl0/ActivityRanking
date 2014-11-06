@@ -104,7 +104,7 @@ class ActivityScore extends SimpleORMap {
      */
     private function calculate() {
         $sql = "
-SELECT round(SUM((-atan(((unix_timestamp() / ".self::MEASURING_STEP.") - dates) / 8765.81277) / PI() + 0.5) * 1000)) as score FROM (
+SELECT round(SUM((-atan(((unix_timestamp() / ".self::MEASURING_STEP.") - dates) / ".round(31556926 / self::MEASURING_STEP) .") / PI() + 0.5) * 1000)) as score FROM (
 SELECT distinct (round(mkdate / ".self::MEASURING_STEP."))  as dates from
 (
 SELECT mkdate FROM dokumente WHERE user_id = :user
