@@ -17,7 +17,7 @@
 class ActivityScore extends SimpleORMap {
 
     // How often should the score be updated
-    const UPDATE_INTERVAL = 3600;
+    const UPDATE_INTERVAL = 1;
     
     // How long should an activity block others?
     const MEASURING_STEP = 1800; // half an hour
@@ -103,30 +103,66 @@ class ActivityScore extends SimpleORMap {
      * @return int
      */
     private function calculate() {
-        $sql = "
-SELECT round(SUM((-atan(((unix_timestamp() / ".self::MEASURING_STEP.") - dates) / ".round(31556926 / self::MEASURING_STEP) .") / PI() + 0.5) * 1000)) as score FROM (
-SELECT distinct (round(mkdate / ".self::MEASURING_STEP."))  as dates from
-(
-SELECT mkdate FROM dokumente WHERE user_id = :user
-UNION
-SELECT mkdate FROM seminar_user WHERE user_id = :user
-UNION
-SELECT mkdate FROM user_info WHERE user_id = :user
-UNION
-SELECT mkdate FROM news WHERE user_id = :user
-UNION
-SELECT mkdate FROM kategorien WHERE range_id = :user
-UNION
-SELECT mkdate FROM vote WHERE range_id = :user
-UNION
-SELECT votedate as mkdate FROM vote_user WHERE user_id = :user
-UNION
-SELECT votedate as mkdate FROM voteanswers_user WHERE user_id = :user
-UNION
-SELECT chdate as mkdate FROM wiki WHERE user_id = :user
-UNION
-SELECT mkdate FROM blubber WHERE user_id = :user
-) as mkdates) as dates";
+        if (false) {
+            //old code
+            $sql = "
+                SELECT round(SUM((-atan(((unix_timestamp() / ".self::MEASURING_STEP.") - dates) / ".round(31556926 / self::MEASURING_STEP) .") / PI() + 0.5) * 1000)) as score FROM (
+                SELECT distinct (round(mkdate / ".self::MEASURING_STEP."))  as dates from
+                (
+                SELECT mkdate FROM dokumente WHERE user_id = :user
+                UNION
+                SELECT mkdate FROM seminar_user WHERE user_id = :user
+                UNION
+                SELECT mkdate FROM user_info WHERE user_id = :user
+                UNION
+                SELECT mkdate FROM news WHERE user_id = :user
+                UNION
+                SELECT mkdate FROM kategorien WHERE range_id = :user
+                UNION
+                SELECT mkdate FROM vote WHERE range_id = :user
+                UNION
+                SELECT votedate as mkdate FROM vote_user WHERE user_id = :user
+                UNION
+                SELECT votedate as mkdate FROM voteanswers_user WHERE user_id = :user
+                UNION
+                SELECT chdate as mkdate FROM wiki WHERE user_id = :user
+                UNION
+                SELECT mkdate FROM blubber WHERE user_id = :user
+                ) as mkdates) as dates";
+        } else {
+            //my approach
+            $sql = "
+                SELECT round(SUM((-atan(measurement / ".round(31556926 / self::MEASURING_STEP) .") / PI() + 0.5) * 1000)) as score
+                FROM (
+                    SELECT ((unix_timestamp() / ".self::MEASURING_STEP.") - timeslot) / SQRT(weigh) AS measurement
+                    FROM (
+                        SELECT (round(mkdate / ".self::MEASURING_STEP.")) as timeslot, COUNT(*) AS weigh
+                        FROM (
+                            SELECT mkdate FROM dokumente WHERE user_id = :user
+                            UNION
+                            SELECT mkdate FROM seminar_user WHERE user_id = :user
+                            UNION
+                            SELECT mkdate FROM user_info WHERE user_id = :user
+                            UNION
+                            SELECT mkdate FROM news WHERE user_id = :user
+                            UNION
+                            SELECT mkdate FROM kategorien WHERE range_id = :user
+                            UNION
+                            SELECT mkdate FROM vote WHERE range_id = :user
+                            UNION
+                            SELECT votedate as mkdate FROM vote_user WHERE user_id = :user
+                            UNION
+                            SELECT votedate as mkdate FROM voteanswers_user WHERE user_id = :user
+                            UNION
+                            SELECT chdate as mkdate FROM wiki WHERE user_id = :user
+                            UNION
+                            SELECT mkdate FROM blubber WHERE user_id = :user
+                        ) as mkdates
+                        GROUP BY timeslot
+                    ) as measurements
+                ) as dates
+            ";
+        }
         $stmt = DBManager::get()->prepare($sql);
         $stmt->execute(array(':user' => $this->user_id));
         return $stmt->fetchColumn();
