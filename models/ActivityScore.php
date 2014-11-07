@@ -21,8 +21,10 @@ class ActivityScore extends SimpleORMap {
     
     // How long should an activity block others?
     const MEASURING_STEP = 1800; // half an hour
-
     
+    // Timesstamp query cache
+    private static $timestampQuery;
+            
       public function __construct($id = null) {
           $this->db_table = 'user_activity_score';
           $this->additional_fields['title'] = true;
@@ -166,6 +168,25 @@ class ActivityScore extends SimpleORMap {
         $stmt = DBManager::get()->prepare($sql);
         $stmt->execute(array(':user' => $this->user_id));
         return $stmt->fetchColumn();
+    }
+    
+    private static function createTimestampQuery() {
+        if (!self::$timestampQuery) {
+            $tables = DBManager::get()->query('SELECT * FROM user_activity_tables');
+            $statements = array();
+            while ($table = $tables->fetch(PDO::FETCH_ASSOC)) {
+                $statements[] = "SELECT "
+                        .($table['datecol'] ? : 'mkdate')
+                        ." AS mkdate FROM "
+                        .$table['table']
+                        ." WHERE "
+                        .($table['usercol'] ? : 'user_id')
+                        ." = :user "
+                        .($table['where'] ? (' AND '.$table['where']) : '');
+            }
+            self::$timestampQuery = join(' UNION ', $statements);
+        }
+        return self::$timestampQuery;
     }
 
     /**
