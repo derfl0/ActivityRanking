@@ -17,22 +17,23 @@
 class ActivityScore extends SimpleORMap {
 
     // How often should the score be updated
-    const UPDATE_INTERVAL = 1;
-    
+    const UPDATE_INTERVAL = 3600; // Update hourly
     // How long should an activity block others?
     const MEASURING_STEP = 1800; // half an hour
-    
+    // How many other scores should be calculated per call
+    const CALCULATIONS_PER_CALL = 3;
+
     // Timesstamp query cache
     private static $timestampQuery;
-            
-      public function __construct($id = null) {
-          $this->db_table = 'user_activity_score';
-          $this->additional_fields['title'] = true;
-          $this->belongs_to['user'] = array(
-              'class_name' => 'User'
-          );
-          parent::__construct($id);
-      }
+
+    public function __construct($id = null) {
+        $this->db_table = 'user_activity_score';
+        $this->additional_fields['title'] = true;
+        $this->belongs_to['user'] = array(
+            'class_name' => 'User'
+        );
+        parent::__construct($id);
+    }
 
     /**
      * Returns the score for a user (Refresh score if it is to old)
@@ -40,11 +41,16 @@ class ActivityScore extends SimpleORMap {
      * @return int score
      */
     public function getScore() {
-        if (!$this->content['score'] || (time() - $this->chdate) > static::UPDATE_INTERVAL) {
+        if ($this->shouldCalculate() && !$this->content['score'] || (time() - $this->chdate) > static::UPDATE_INTERVAL) {
             $this->content['score'] = $this->calculate();
             $this->store();
         }
         return $this->content['score'];
+    }
+
+    private function shouldCalculate() {
+        // Calculate score if it is your own or you havent done your calculations already
+        return $this->user_id == $GLOBALS['user']->id || $GLOBALS['calculatedScores'] ++ < self::CALCULATIONS_PER_CALL;
     }
 
     /**
@@ -108,21 +114,21 @@ class ActivityScore extends SimpleORMap {
         if (false) {
             //old code
             $sql = "
-                SELECT round(SUM((-atan(((unix_timestamp() / ".self::MEASURING_STEP.") - dates) / ".round(31556926 / self::MEASURING_STEP) .") / PI() + 0.5) * 1000)) as score FROM (
-                SELECT distinct (round(mkdate / ".self::MEASURING_STEP."))  as dates from
+                SELECT round(SUM((-atan(((unix_timestamp() / " . self::MEASURING_STEP . ") - dates) / " . round(31556926 / self::MEASURING_STEP) . ") / PI() + 0.5) * 1000)) as score FROM (
+                SELECT distinct (round(mkdate / " . self::MEASURING_STEP . "))  as dates from
                 (
-                ".self::createTimestampQuery()."
+                " . self::createTimestampQuery() . "
                 ) as mkdates) as dates";
         } else {
             //my approach
             $sql = "
-                SELECT round(SUM((-atan(measurement / ".round(31556926 / self::MEASURING_STEP) .") / PI() + 0.5) * 1000)) as score
+                SELECT round(SUM((-atan(measurement / " . round(31556926 / self::MEASURING_STEP) . ") / PI() + 0.5) * 1000)) as score
                 FROM (
-                    SELECT ((unix_timestamp() / ".self::MEASURING_STEP.") - timeslot) / (LN(weigh) + 1) AS measurement
+                    SELECT ((unix_timestamp() / " . self::MEASURING_STEP . ") - timeslot) / SQRT(weigh) AS measurement
                     FROM (
-                        SELECT (round(mkdate / ".self::MEASURING_STEP.")) as timeslot, COUNT(*) AS weigh
+                        SELECT (round(mkdate / " . self::MEASURING_STEP . ")) as timeslot, COUNT(*) AS weigh
                         FROM (
-                            ".self::createTimestampQuery()."
+                            " . self::createTimestampQuery() . "
                         ) as mkdates
                         GROUP BY timeslot
                     ) as measurements
@@ -133,20 +139,20 @@ class ActivityScore extends SimpleORMap {
         $stmt->execute(array(':user' => $this->user_id));
         return $stmt->fetchColumn();
     }
-    
+
     private static function createTimestampQuery() {
         if (!self::$timestampQuery) {
             $tables = DBManager::get()->query('SELECT * FROM user_activity_tables');
             $statements = array();
             while ($table = $tables->fetch(PDO::FETCH_ASSOC)) {
                 $statements[] = "SELECT "
-                        .($table['datecol'] ? : 'mkdate')
-                        ." AS mkdate FROM "
-                        .$table['table']
-                        ." WHERE "
-                        .($table['usercol'] ? : 'user_id')
-                        ." = :user "
-                        .($table['where'] ? (' AND '.$table['where']) : '');
+                        . ($table['datecol'] ? : 'mkdate')
+                        . " AS mkdate FROM "
+                        . $table['table']
+                        . " WHERE "
+                        . ($table['usercol'] ? : 'user_id')
+                        . " = :user "
+                        . ($table['where'] ? (' AND ' . $table['where']) : '');
             }
             self::$timestampQuery = join(' UNION ', $statements);
         }
