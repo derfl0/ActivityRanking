@@ -111,25 +111,7 @@ class ActivityScore extends SimpleORMap {
                 SELECT round(SUM((-atan(((unix_timestamp() / ".self::MEASURING_STEP.") - dates) / ".round(31556926 / self::MEASURING_STEP) .") / PI() + 0.5) * 1000)) as score FROM (
                 SELECT distinct (round(mkdate / ".self::MEASURING_STEP."))  as dates from
                 (
-                SELECT mkdate FROM dokumente WHERE user_id = :user
-                UNION
-                SELECT mkdate FROM seminar_user WHERE user_id = :user
-                UNION
-                SELECT mkdate FROM user_info WHERE user_id = :user
-                UNION
-                SELECT mkdate FROM news WHERE user_id = :user
-                UNION
-                SELECT mkdate FROM kategorien WHERE range_id = :user
-                UNION
-                SELECT mkdate FROM vote WHERE range_id = :user
-                UNION
-                SELECT votedate as mkdate FROM vote_user WHERE user_id = :user
-                UNION
-                SELECT votedate as mkdate FROM voteanswers_user WHERE user_id = :user
-                UNION
-                SELECT chdate as mkdate FROM wiki WHERE user_id = :user
-                UNION
-                SELECT mkdate FROM blubber WHERE user_id = :user
+                ".self::createTimestampQuery()."
                 ) as mkdates) as dates";
         } else {
             //my approach
@@ -140,25 +122,7 @@ class ActivityScore extends SimpleORMap {
                     FROM (
                         SELECT (round(mkdate / ".self::MEASURING_STEP.")) as timeslot, COUNT(*) AS weigh
                         FROM (
-                            SELECT mkdate FROM dokumente WHERE user_id = :user
-                            UNION
-                            SELECT mkdate FROM seminar_user WHERE user_id = :user
-                            UNION
-                            SELECT mkdate FROM user_info WHERE user_id = :user
-                            UNION
-                            SELECT mkdate FROM news WHERE user_id = :user
-                            UNION
-                            SELECT mkdate FROM kategorien WHERE range_id = :user
-                            UNION
-                            SELECT mkdate FROM vote WHERE range_id = :user
-                            UNION
-                            SELECT votedate as mkdate FROM vote_user WHERE user_id = :user
-                            UNION
-                            SELECT votedate as mkdate FROM voteanswers_user WHERE user_id = :user
-                            UNION
-                            SELECT chdate as mkdate FROM wiki WHERE user_id = :user
-                            UNION
-                            SELECT mkdate FROM blubber WHERE user_id = :user
+                            ".self::createTimestampQuery()."
                         ) as mkdates
                         GROUP BY timeslot
                     ) as measurements
