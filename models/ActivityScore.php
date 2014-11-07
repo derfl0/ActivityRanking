@@ -124,7 +124,7 @@ class ActivityScore extends SimpleORMap {
             $sql = "
                 SELECT round(SUM((-atan(measurement / " . round(31556926 / self::MEASURING_STEP) . ") / PI() + 0.5) * 1000)) as score
                 FROM (
-                    SELECT ((unix_timestamp() / " . self::MEASURING_STEP . ") - timeslot) / SQRT(weigh) AS measurement
+                    SELECT ((unix_timestamp() / " . self::MEASURING_STEP . ") - timeslot) / LN(weigh) + 1 AS measurement
                     FROM (
                         SELECT (round(mkdate / " . self::MEASURING_STEP . ")) as timeslot, COUNT(*) AS weigh
                         FROM (
