@@ -17,7 +17,7 @@
 class ActivityScore extends SimpleORMap {
 
     // How often should the score be updated
-    const UPDATE_INTERVAL = 60 * 10; // Update every ten minutes
+    const UPDATE_INTERVAL = 600; // Update every ten minutes
     // How long should an activity block others?
     const MEASURING_STEP = 1800; // half an hour
     // How many other scores should be calculated per call
