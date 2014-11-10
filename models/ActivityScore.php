@@ -70,7 +70,7 @@ class ActivityScore extends SimpleORMap {
     public function getTitle() {
         $allTitle = self::getAllTitle();
         $title = min(array(count($allTitle), floor(log10($this->score) / log10(2))));
-        return $allTitle[$title][$this->user->info->geschlecht];
+        return $allTitle[$title][$this->user->info->geschlecht ?: 1];
     }
 
     /**
@@ -85,22 +85,22 @@ class ActivityScore extends SimpleORMap {
             array(1 => _("Unbeschriebenes Blatt"), 2 => _("Unbeschriebenes Blatt")),
             array(1 => _("Neuling"), 2 => _("Neuling")),
             array(1 => _("Greenhorn"), 2 => _("Greenhorn")),
-            array(1 => _("AnfÃ¤nger"), 2 => _("AnfÃ¤ngerin")),
+            array(1 => _("Anfänger"), 2 => _("Anfängerin")),
             array(1 => _("Einsteiger"), 2 => _("Einsteigerin")),
             array(1 => _("Beginner"), 2 => _("Beginnerin")),
             array(1 => _("Novize"), 2 => _("Novizin")),
             array(1 => _("Fortgeschrittener"), 2 => _("Fortgeschrittene")),
             array(1 => _("Kenner"), 2 => _("Kennerin")),
-            array(1 => _("KÃ¶nner"), 2 => _("KÃ¶nnerin")),
+            array(1 => _("Könner"), 2 => _("Könnerin")),
             array(1 => _("Profi"), 2 => _("Profi")),
             array(1 => _("Experte"), 2 => _("Expertin")),
             array(1 => _("Meister"), 2 => _("Meisterin")),
-            array(1 => _("GroÃŸmeister"), 2 => _("GroÃŸmeisterin")),
+            array(1 => _("Großmeister"), 2 => _("Großmeisterin")),
             array(1 => _("Idol"), 2 => _("Idol")),
             array(1 => _("Guru"), 2 => _("Hohepriesterin")),
             array(1 => _("Lichtgestalt"), 2 => _("Lichtgestalt")),
-            array(1 => _("Halbgott"), 2 => _("HalbgÃ¶ttin")),
-            array(1 => _("Gott"), 2 => _("GÃ¶ttin")),
+            array(1 => _("Halbgott"), 2 => _("Halbgöttin")),
+            array(1 => _("Gott"), 2 => _("Göttin")),
         );
     }
 
@@ -176,7 +176,7 @@ class ActivityScore extends SimpleORMap {
         // News
         $news = $db->fetchColumn("SELECT COUNT(*) FROM news_range WHERE range_id = ?", array($this->user_id));
         if ($news) {
-            $tmp = sprintf(ngettext('Eine pers?nliche AnkÂ¸ndigung', '%s pers?nliche AnkÂ¸ndigungen', $news), $news);
+            $tmp = sprintf(ngettext('Eine persönliche Ankündigung', '%s persönliche Ankündigungen', $news), $news);
             $content .= sprintf('<a href="%s">%s</a> ', URLHelper::getLink('dispatch.php/profile', compact('username')), Assets::img('icons/16/blue/news.png', tooltip2($tmp)));
         } else {
             $content .= Assets::img('blank.gif', array('width' => 16)) . ' ';
