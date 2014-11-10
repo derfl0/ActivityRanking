@@ -17,7 +17,7 @@
 class ActivityScore extends SimpleORMap {
 
     // How often should the score be updated
-    const UPDATE_INTERVAL = 60; // Update minutely
+    const UPDATE_INTERVAL = 60 * 10; // Update every ten minutes
     // How long should an activity block others?
     const MEASURING_STEP = 1800; // half an hour
     // How many other scores should be calculated per call
@@ -122,7 +122,7 @@ class ActivityScore extends SimpleORMap {
         } else {
             //my approach
             $sql = "
-                SELECT round(SUM((-atan(measurement / " . round(31556926 / self::MEASURING_STEP) . ") / PI() + 0.5) * 1000)) as score
+                SELECT round(SUM((-atan(measurement / " . round(31556926 / self::MEASURING_STEP) . ") / PI() + 0.5) * 200)) as score
                 FROM (
                     SELECT ((unix_timestamp() / " . self::MEASURING_STEP . ") - timeslot) / (LN(weigh) + 1) AS measurement
                     FROM (
